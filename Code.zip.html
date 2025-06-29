@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Pessoal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #10b981;
+            --secondary-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --gray: #6b7280;
+            --light-gray: #f3f4f6;
+            --dark: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .transaction-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .transaction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .income {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .expense {
+            border-left: 4px solid var(--danger);
+        }
+
+        #chart-container {
+            height: 300px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <div class="flex justify-center mb-4">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/82796335-7060-4287-8111-e87c251bbbc5.png" alt="Logotipo do aplicativo de controle financeiro - Um cofrinho azul com moedas de ouro saindo dele e gráficos ao fundo" class="rounded-full w-28 h-28 object-cover">
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Controle Financeiro</h1>
+            <p class="text-gray-600 mt-2">Organize suas receitas e despesas de maneira simples</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Saldo Atual -->
+            <div class="dashboard-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 font-medium">Saldo Atual</p>
+                        <h2 class="text-2xl font-bold" id="balance">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-wallet text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receitas -->
+            <div class="dashboard-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 font-medium">Receitas</p>
+                        <h2 class="text-2xl font-bold text-green-500" id="income">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-arrow-down text-green-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Despesas -->
+            <div class="dashboard-card bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 font-medium">Despesas</p>
+                        <h2 class="text-2xl font-bold text-red-500" id="expense">R$ 0,00</h2>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <i class="fas fa-arrow-up text-red-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico e formulário -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Formulário -->
+            <div class="lg:col-span-1 bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Adicionar Transação</h2>
+                <form id="transaction-form">
+                    <div class="mb-4">
+                        <label for="description" class="block text-gray-700 font-medium mb-2">Descrição</label>
+                        <input type="text" id="description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="amount" class="block text-gray-700 font-medium mb-2">Valor</label>
+                        <input type="number" id="amount" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2">Tipo</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="type" value="income" class="text-green-500 focus:ring-green-500" checked>
+                                <span class="ml-2">Receita</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="type" value="expense" class="text-red-500 focus:ring-red-500">
+                                <span class="ml-2">Despesa</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="category" class="block text-gray-700 font-medium mb-2">Categoria</label>
+                        <select id="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="alimentacao">Alimentação</option>
+                            <option value="moradia">Moradia</option>
+                            <option value="transporte">Transporte</option>
+                            <option value="lazer">Lazer</option>
+                            <option value="saude">Saúde</option>
+                            <option value="educacao">Educação</option>
+                            <option value="salario">Salário</option>
+                            <option value="investimentos">Investimentos</option>
+                            <option value="outros">Outros</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="date" class="block text-gray-700 font-medium mb-2">Data</label>
+                        <input type="date" id="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        Adicionar Transação
+                    </button>
+                </form>
+            </div>
+
+            <!-- Gráfico e Lista -->
+            <div class="lg:col-span-2">
+                <!-- Gráfico -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Resumo Financeiro</h2>
+                        <select id="chart-period" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="week">Últimos 7 dias</option>
+                            <option value="month">Este mês</option>
+                            <option value="year">Este ano</option>
+                        </select>
+                    </div>
+                    <div id="chart-container">
+                        <canvas id="finance-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Lista de transações -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Histórico de Transações</h2>
+                        <div class="flex space-x-2">
+                            <button id="filter-all" class="px-4 py-1 bg-blue-500 text-white rounded-lg">Todas</button>
+                            <button id="filter-income" class="px-4 py-1 bg-green-500 text-white rounded-lg">Receitas</button>
+                            <button id="filter-expense" class="px-4 py-1 bg-red-500 text-white rounded-lg">Despesas</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <input type="text" id="search-transactions" placeholder="Pesquisar transações..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div id="transactions-list" class="space-y-4">
+                        <!-- Transações serão adicionadas aqui dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para edição -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Editar Transação</h2>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="mb-4">
+                    <label for="edit-description" class="block text-gray-700 font-medium mb-2">Descrição</label>
+                    <input type="text" id="edit-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+
+                <div class="mb-4">
+                    <label for="edit-amount" class="block text-gray-700 font-medium mb-2">Valor</label>
+                    <input type="number" id="edit-amount" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Tipo</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="edit-type" value="income" class="text-green-500 focus:ring-green-500">
+                            <span class="ml-2">Receita</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="edit-type" value="expense" class="text-red-500 focus:ring-red-500">
+                            <span class="ml-2">Despesa</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="edit-category" class="block text-gray-700 font-medium mb-2">Categoria</label>
+                    <select id="edit-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="alimentacao">Alimentação</option>
+                        <option value="moradia">Moradia</option>
+                        <option value="transporte">Transporte</option>
+                        <option value="lazer">Lazer</option>
+                        <option value="saude">Saúde</option>
+                        <option value="educacao">Educação</option>
+                        <option value="salario">Salário</option>
+                        <option value="investimentos">Investimentos</option>
+                        <option value="outros">Outros</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="edit-date" class="block text-gray-700 font-medium mb-2">Data</label>
+                    <input type="date" id="edit-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+
+                <div class="flex space-x-2">
+                    <button type="submit" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        Salvar
+                    </button>
+                    <button type="button" id="delete-transaction" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                        Excluir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializa data no formulário com hoje
+            document.getElementById('date').valueAsDate = new Date();
+            
+            // Tenta carregar transações do localStorage
+            let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            
+            // Elementos do DOM
+            const transactionForm = document.getElementById('transaction-form');
+            const editForm = document.getElementById('edit-form');
+            const transactionsList = document.getElementById('transactions-list');
+            const balanceElement = document.getElementById('balance');
+            const incomeElement = document.getElementById('income');
+            const expenseElement = document.getElementById('expense');
+            const searchInput = document.getElementById('search-transactions');
+            const editModal = document.getElementById('edit-modal');
+            const closeModal = document.getElementById('close-modal');
+            const deleteButton = document.getElementById('delete-transaction');
+            
+            // Botões de filtro
+            const filterAll = document.getElementById('filter-all');
+            const filterIncome = document.getElementById('filter-income');
+            const filterExpense = document.getElementById('filter-expense');
+            
+            // Gráfico
+            let financeChart;
+            
+            // Inicializa o aplicativo
+            init();
+            
+            function init() {
+                updateUI();
+                setupEventListeners();
+                renderChart();
+            }
+            
+            function setupEventListeners() {
+                // Formulário de nova transação
+                transactionForm.addEventListener('submit', addTransaction);
+                
+                // Formulário de edição
+                editForm.addEventListener('submit', updateTransaction);
+                
+                // Botões de filtro
+                filterAll.addEventListener('click', () => updateUI());
+                filterIncome.addEventListener('click', () => updateUI('income'));
+                filterExpense.addEventListener('click', () => updateUI('expense'));
+                
+                // Pesquisa
+                searchInput.addEventListener('input', () => updateUI(null, searchInput.value));
+                
+                // Modal
+                closeModal.addEventListener('click', () => editModal.classList.add('hidden'));
+                deleteButton.addEventListener('click', deleteTransaction);
+                
+                // Fechar modal ao clicar fora
+                editModal.addEventListener('click', (e) => {
+                    if (e.target === editModal) {
+                        editModal.classList.add('hidden');
+                    }
+                });
+                
+                // Periodo do gráfico
+                document.getElementById('chart-period').addEventListener('change', renderChart);
+            }
+            
+            function addTransaction(e) {
+                e.preventDefault();
+                
+                const description = document.getElementById('description').value;
+                const amount = parseFloat(document.getElementById('amount').value);
+                const type = document.querySelector('input[name="type"]:checked').value;
+                const category = document.getElementById('category').value;
+                const date = document.getElementById('date').value;
+                
+                const transaction = {
+                    id: Date.now(),
+                    description,
+                    amount,
+                    type,
+                    category,
+                    date
+                };
+                
+                transactions.push(transaction);
+                saveTransactions();
+                updateUI();
+                
+                // Reset form
+                transactionForm.reset();
+                document.getElementById('date').valueAsDate = new Date();
+            }
+            
+            function editTransaction(id) {
+                const transaction = transactions.find(t => t.id === id);
+                
+                if (!transaction) return;
+                
+                document.getElementById('edit-id').value = transaction.id;
+                document.getElementById('edit-description').value = transaction.description;
+                document.getElementById('edit-amount').value = transaction.amount;
+                document.querySelector(`input[name="edit-type"][value="${transaction.type}"]`).checked = true;
+                document.getElementById('edit-category').value = transaction.category;
+                document.getElementById('edit-date').value = transaction.date;
+                
+                editModal.classList.remove('hidden');
+            }
+            
+            function updateTransaction(e) {
+                e.preventDefault();
+                
+                const id = parseInt(document.getElementById('edit-id').value);
+                const description = document.getElementById('edit-description').value;
+                const amount = parseFloat(document.getElementById('edit-amount').value);
+                const type = document.querySelector('input[name="edit-type"]:checked').value;
+                const category = document.getElementById('edit-category').value;
+                const date = document.getElementById('edit-date').value;
+                
+                const index = transactions.findIndex(t => t.id === id);
+                
+                if (index !== -1) {
+                    transactions[index] = {
+                        id,
+                        description,
+                        amount,
+                        type,
+                        category,
+                        date
+                    };
+                    
+                    saveTransactions();
+                    updateUI();
+                    editModal.classList.add('hidden');
+                }
+            }
+            
+            function deleteTransaction() {
+                const id = parseInt(document.getElementById('edit-id').value);
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                updateUI();
+                editModal.classList.add('hidden');
+            }
+            
+            function saveTransactions() {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+            }
+            
+            function updateUI(filterType = null, searchTerm = '') {
+                // Filtra transações
+                let filteredTransactions = [...transactions];
+                
+                if (filterType) {
+                    filteredTransactions = filteredTransactions.filter(t => t.type === filterType);
+                }
+                
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    filteredTransactions = filteredTransactions.filter(t => 
+                        t.description.toLowerCase().includes(term) || 
+                        t.category.toLowerCase().includes(term)
+                    );
+                }
+                
+                // Ordena por data (mais recente primeiro)
+                filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Limpa lista
+                transactionsList.innerHTML = '';
+                
+                // Adiciona transações filtradas
+                if (filteredTransactions.length === 0) {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.className = 'text-center py-4 text-gray-500';
+                    emptyMessage.textContent = 'Nenhuma transação encontrada';
+                    transactionsList.appendChild(emptyMessage);
+                } else {
+                    filteredTransactions.forEach(transaction => {
+                        const transactionElement = document.createElement('div');
+                        transactionElement.className = `transaction-card bg-white rounded-lg shadow p-4 flex justify-between items-center ${transaction.type}`;
+                        
+                        const icon = document.createElement('div');
+                        icon.className = 'mr-4 text-xl';
+                        
+                        if (transaction.type === 'income') {
+                            icon.innerHTML = '<i class="fas fa-arrow-down text-green-500"></i>';
+                        } else {
+                            icon.innerHTML = '<i class="fas fa-arrow-up text-red-500"></i>';
+                        }
+                        
+                        const details = document.createElement('div');
+                        details.className = 'flex-1';
+                        
+                        const description = document.createElement('h3');
+                        description.className = 'font-bold text-gray-800';
+                        description.textContent = transaction.description;
+                        
+                        const meta = document.createElement('div');
+                        meta.className = 'flex text-sm text-gray-600';
+                        
+                        const category = document.createElement('span');
+                        category.className = 'mr-2';
+                        category.textContent = getCategoryName(transaction.category);
+                        
+                        const date = document.createElement('span');
+                        date.textContent = formatDate(transaction.date);
+                        
+                        meta.appendChild(category);
+                        meta.appendChild(date);
+                        
+                        details.appendChild(description);
+                        details.appendChild(meta);
+                        
+                        const amount = document.createElement('div');
+                        amount.className = `text-lg font-bold ${transaction.type === 'income' ? 'text-green-500' : 'text-red-500'}`;
+                        amount.textContent = transaction.type === 'income' ? `+ R$ ${transaction.amount.toFixed(2)}` : `- R$ ${transaction.amount.toFixed(2)}`;
+                        
+                        const actions = document.createElement('div');
+                        actions.className = 'ml-4 flex space-x-2';
+                        
+                        const editButton = document.createElement('button');
+                        editButton.className = 'text-blue-500 hover:text-blue-700';
+                        editButton.innerHTML = '<i class="fas fa-edit"></i>';
+                        editButton.addEventListener('click', () => editTransaction(transaction.id));
+                        
+                        actions.appendChild(editButton);
+                        
+                        transactionElement.appendChild(icon);
+                        transactionElement.appendChild(details);
+                        transactionElement.appendChild(amount);
+                        transactionElement.appendChild(actions);
+                        
+                        transactionsList.appendChild(transactionElement);
+                    });
+                }
+                
+                // Atualiza totais
+                updateTotals();
+                
+                // Atualiza gráfico
+                renderChart();
+            }
+            
+            function updateTotals() {
+                const incomeTotal = transactions
+                    .filter(t => t.type === 'income')
+                    .reduce((acc, t) => acc + t.amount, 0);
+                
+                const expenseTotal = transactions
+                    .filter(t => t.type === 'expense')
+                    .reduce((acc, t) => acc + t.amount, 0);
+                
+                const balance = incomeTotal - expenseTotal;
+                
+                incomeElement.textContent = `R$ ${incomeTotal.toFixed(2)}`;
+                expenseElement.textContent = `R$ ${expenseTotal.toFixed(2)}`;
+                balanceElement.textContent = `R$ ${balance.toFixed(2)}`;
+                
+                // Define cor do saldo
+                balanceElement.classList.remove('text-green-500', 'text-red-500');
+                if (balance > 0) {
+                    balanceElement.classList.add('text-green-500');
+                } else if (balance < 0) {
+                    balanceElement.classList.add('text-red-500');
+                }
+            }
+            
+            function renderChart() {
+                const period = document.getElementById('chart-period').value;
+                const now = new Date();
+                let labels = [];
+                let incomeData = [];
+                let expenseData = [];
+                
+                if (period === 'week') {
+                    // Últimos 7 dias
+                    for (let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(now.getDate() - i);
+                        const dateStr = formatDateForChart(date);
+                        
+                        labels.push(formatDateShort(dateStr));
+                        
+                        // Calcula receitas
+                        incomeData.push(
+                            transactions
+                                .filter(t => t.type === 'income' && t.date === dateStr)
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                        
+                        // Calcula despesas
+                        expenseData.push(
+                            transactions
+                                .filter(t => t.type === 'expense' && t.date === dateStr)
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                    }
+                } else if (period === 'month') {
+                    // Este mês
+                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const date = new Date(now.getFullYear(), now.getMonth(), i);
+                        const dateStr = formatDateForChart(date);
+                        
+                        labels.push(i.toString());
+                        
+                        // Calcula receitas
+                        incomeData.push(
+                            transactions
+                                .filter(t => t.type === 'income' && t.date === dateStr)
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                        
+                        // Calcula despesas
+                        expenseData.push(
+                            transactions
+                                .filter(t => t.type === 'expense' && t.date === dateStr)
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                    }
+                } else {
+                    // Este ano (por mês)
+                    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                    for (let i = 0; i < 12; i++) {
+                        // Verifica se estamos no ano atual
+                        const currentYear = now.getFullYear();
+                        const currentMonth = now.getMonth();
+                        if (i > currentMonth) break;
+                        
+                        labels.push(monthNames[i]);
+                        
+                        // Calcula receitas do mês
+                        incomeData.push(
+                            transactions
+                                .filter(t => {
+                                    const transactionDate = new Date(t.date);
+                                    return t.type === 'income' && 
+                                           transactionDate.getFullYear() === currentYear &&
+                                           transactionDate.getMonth() === i;
+                                })
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                        
+                        // Calcula despesas do mês
+                        expenseData.push(
+                            transactions
+                                .filter(t => {
+                                    const transactionDate = new Date(t.date);
+                                    return t.type === 'expense' && 
+                                           transactionDate.getFullYear() === currentYear &&
+                                           transactionDate.getMonth() === i;
+                                })
+                                .reduce((acc, t) => acc + t.amount, 0)
+                        );
+                    }
+                }
+                
+                // Destrói o gráfico anterior se existir
+                const chartElement = document.getElementById('finance-chart');
+                if (financeChart) {
+                    financeChart.destroy();
+                }
+                
+                // Cria novo gráfico
+                financeChart = new Chart(chartElement, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Receitas',
+                                data: incomeData,
+                                backgroundColor: '#10B981',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Despesas',
+                                data: expenseData,
+                                backgroundColor: '#EF4444',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: R$ ${context.raw.toFixed(2)}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'R$ ' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Funções auxiliares
+            function getCategoryName(category) {
+                const categories = {
+                    'alimentacao': 'Alimentação',
+                    'moradia': 'Moradia',
+                    'transporte': 'Transporte',
+                    'lazer': 'Lazer',
+                    'saude': 'Saúde',
+                    'educacao': 'Educação',
+                    'salario': 'Salário',
+                    'investimentos': 'Investimentos',
+                    'outros': 'Outros'
+                };
+                return categories[category] || category;
+            }
+            
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+            
+            function formatDateShort(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+            }
+            
+            function formatDateForChart(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+        });
+    </script>
+</body>
+</html>
+
